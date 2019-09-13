@@ -6,6 +6,9 @@ import com.izyver.presentation.alghoritm.model.SlideshowImage;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SlideshowParser {
 
@@ -22,7 +25,7 @@ public class SlideshowParser {
             for (int j = 0; j < strImageIndexes.length; j++) {
                 imageIndexes[j] = Integer.parseInt(strImageIndexes[j]);
             }
-            slideshowImages[i] = new SlideshowImage(imageIndexes);
+            slideshowImages[i] = new SlideshowImage(imageIndexes, null);
         }
         return slideshowImages;
     }
@@ -44,7 +47,7 @@ public class SlideshowParser {
                 tags[j] = words[j + 2];
             }
 
-            Image image = new Image(i + 1, orientation, tags);
+            Image image = new Image(i, orientation, tags);
             images[i] = image;
         }
         return images;
@@ -61,4 +64,16 @@ public class SlideshowParser {
         }
     }
 
+    public String[] splitTags(Image... images) {
+        Set<String> tags = new HashSet<>();
+
+        for (Image image : images) {
+            tags.addAll(Arrays.asList(image.tags));
+        }
+
+        String[] strTags = new String[tags.size()];
+        tags.toArray(strTags);
+        return strTags;
+
+    }
 }

@@ -2,6 +2,7 @@ package com.izyver.presentation.alghoritm.creator;
 
 import com.izyver.presentation.alghoritm.model.Image;
 import com.izyver.presentation.alghoritm.model.SlideshowImage;
+import com.izyver.presentation.alghoritm.utils.SlideshowCalculator;
 import com.izyver.presentation.alghoritm.utils.SlideshowParser;
 
 import java.io.BufferedReader;
@@ -28,6 +29,9 @@ public class SlideshowGenerator {
         }
 
         SlideshowImage[] slideshowImages = creator.create(inputImages);
+
+        SlideshowCalculator calculator = new SlideshowCalculator();
+        int score = calculator.calculateScoreFromImages(inputImages, slideshowImages);
 
         return "";
 

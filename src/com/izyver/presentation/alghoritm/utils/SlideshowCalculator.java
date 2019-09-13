@@ -7,11 +7,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 public class SlideshowCalculator {
+
+    private SlideshowParser parser = new SlideshowParser();
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) throw new IOException("You mast give two arguments int parser, " +
@@ -36,44 +35,33 @@ public class SlideshowCalculator {
                 BufferedReader bufferedInputReader = new BufferedReader(inputReader);
                 BufferedReader bufferedOutputReader = new BufferedReader(outputReader);
         ) {
-            SlideshowParser parser = new SlideshowParser();
             Image[] inputImages = parser.getInputImages(bufferedInputReader);
             SlideshowImage[] outputImages = parser.getOutputImages(bufferedOutputReader);
 
-            int score = 0;
-            String[] previousTags = null;
-            for (SlideshowImage outputImage : outputImages) {
-                int[] imageIndexes = outputImage.indexes;
-                Image[] imagesOnTheScreen = new Image[imageIndexes.length];
-                for (int j = 0; j < imageIndexes.length; j++) {
-                    imagesOnTheScreen[j] = inputImages[imageIndexes[j]];
-                }
-                String[] tags = splitTags(imagesOnTheScreen);
-                if (previousTags != null){
-                    score += scoreFromTags(previousTags, tags);
-                }
-                previousTags = tags;
+            return calculateScoreFromImages(inputImages, outputImages);
+        }
+    }
+
+    public int calculateScoreFromImages(Image[] inputImages, SlideshowImage[] outputImages) {
+        int score = 0;
+        String[] previousTags = null;
+        for (SlideshowImage outputImage : outputImages) {
+            int[] imageIndexes = outputImage.indexes;
+            Image[] imagesOnTheScreen = new Image[imageIndexes.length];
+            for (int j = 0; j < imageIndexes.length; j++) {
+                imagesOnTheScreen[j] = inputImages[imageIndexes[j]];
             }
-            return score;
+            String[] tags = parser.splitTags(imagesOnTheScreen);
+            if (previousTags != null) {
+                score += scoreFromTags(previousTags, tags);
+            }
+            previousTags = tags;
         }
+        return score;
     }
 
 
-
-    private String[] splitTags(Image[] images) {
-        Set<String> tags = new HashSet<>();
-
-        for (Image image : images) {
-            tags.addAll(Arrays.asList(image.tags));
-        }
-
-        String[] strTags = new String[tags.size()];
-        tags.toArray(strTags);
-        return strTags;
-
-    }
-
-    private int scoreFromTags(String[] previousTags, String[] currentTags) {
+    public int scoreFromTags(String[] previousTags, String[] currentTags) {
         int previousUniqueTags = previousTags.length;
         int currentUniqueTags = currentTags.length;
         int commonTags = 0;
