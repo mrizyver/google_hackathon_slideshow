@@ -6,11 +6,10 @@ import com.izyver.presentation.alghoritm.model.Orientation;
 import com.izyver.presentation.alghoritm.model.SlideshowImage;
 import com.izyver.presentation.alghoritm.utils.SlideshowCalculator;
 import com.izyver.presentation.alghoritm.utils.SlideshowParser;
-import com.sun.istack.internal.Nullable;
 
 import java.util.*;
 
-public class FirstCreator implements Creator {
+public class SecondCreator implements Creator {
 
     private SlideshowCalculator calculator = new SlideshowCalculator();
     private SlideshowParser parser = new SlideshowParser();
@@ -27,16 +26,85 @@ public class FirstCreator implements Creator {
         SlideshowImage previousImage = createSlideshowImage(inputImages, tagTable, inputImages[0]);
         slideshowImages.add(previousImage);
 
-        int i =0;
+        int i = 0;
         while (!tagTable.isEmpty()) {
             long d = System.currentTimeMillis();
-            Image image = getNextImage(tagTable, previousImage.tags, inputImages);
-            System.out.println(System.currentTimeMillis() - d + " - " + i++);
 
-            SlideshowImage slideshowImage = createSlideshowImage(inputImages, tagTable, image);
+
+            /********GET_NEXT_IMAGE************/
+            TreeSet<String> prevtags = previousImage.tags;
+            Image image;
+
+            int[] maxScore = new int[]{-1, -1};
+            for (String tag : prevtags) {
+                TreeSet<Integer> horizontalSet = tagTable.findHorizontal(tag);
+                if (horizontalSet != null) {
+                    checkMaxScore(prevtags, inputImages, maxScore, horizontalSet);
+                    TreeSet<Integer> integers = tagTable.horizontal.get(tag);
+                    if (integers != null) {
+                        for (int index : previousImage.indexes) {
+                            integers.remove(index);
+                        }
+                        if (integers.isEmpty()) {
+                            tagTable.horizontal.remove(tag);
+                        }
+                    }
+                }
+
+                TreeSet<Integer> verticalSet = tagTable.findVertical(tag);
+                if (verticalSet != null) {
+                    checkMaxScore(prevtags, inputImages, maxScore, verticalSet);
+                    TreeSet<Integer> integers = tagTable.vertical.remove(tag);
+                    if (integers != null) {
+                        for (int index : previousImage.indexes) {
+                            integers.remove(index);
+                        }
+                        if (integers.isEmpty()) {
+                            tagTable.vertical.remove(tag);
+                        }
+                    }
+                }
+            }
+
+            if (maxScore[1] == -1) {
+                int randomIndex = tagTable.getRandomIndex();
+                if (randomIndex == -1) {
+                    image = new Image(-1, 0, new TreeSet<>());
+                } else {
+                    image = inputImages[randomIndex];
+                }
+            } else {
+                image = inputImages[maxScore[1]];
+            }
+
+
+            /***********CREATE_SLIDESHOW_IMAGE*************/
+            SlideshowImage slideshowImage;
+            if (image.orientation == Orientation.ORIENTATION_VERTICAL) {
+                Image secondImage = getVerticalImage(tagTable, image.tags, inputImages);
+
+                int[] indexes;
+                TreeSet<String> splitTags;
+                if (secondImage != null) {
+                    indexes = new int[]{image.index, secondImage.index};
+                    splitTags = parser.splitTags(image, secondImage);
+                } else {
+                    indexes = new int[]{image.index};
+                    splitTags = image.tags;
+                }
+
+                slideshowImage = new SlideshowImage(indexes, splitTags);
+            } else if (image.orientation == Orientation.ORIENTATION_HORIZONTAL) {
+                int[] indexes = {image.index};
+                TreeSet<String> tags = image.tags;
+                slideshowImage = new SlideshowImage(indexes, tags);
+            } else throw new OrientationNotFount(image.orientation);
 
             previousImage = slideshowImage;
             slideshowImages.add(slideshowImage);
+
+
+            System.out.println(System.currentTimeMillis() - d + " - " + i++);
         }
 
         SlideshowImage[] result = new SlideshowImage[slideshowImages.size()];
@@ -48,8 +116,14 @@ public class FirstCreator implements Creator {
         if (image.orientation == Orientation.ORIENTATION_VERTICAL) {
             Image secondImage = getVerticalImage(tagTable, image.tags, inputImages);
 
-            int[] indexes = new int[]{image.index, secondImage.index};
+            int[] indexes;
+            if (secondImage != null)
+                indexes = new int[]{image.index, secondImage.index};
+            else
+                indexes = new int[]{image.index};
+
             TreeSet<String> splitTags = parser.splitTags(image, secondImage);
+
             tagTable.remove(secondImage);
             tagTable.remove(image);
             return new SlideshowImage(indexes, splitTags);
@@ -66,27 +140,6 @@ public class FirstCreator implements Creator {
     }
 
 
-    private Image getNextImage(TagTable tagTable, TreeSet<String> tags, Image[] inputImages) {
-        int[] maxScore = new int[]{-1, -1};
-
-        for (String tag : tags) {
-            TreeSet<Integer> horizontalSet = tagTable.findHorizontal(tag);
-            if (horizontalSet != null)
-                checkMaxScore(tags, inputImages, maxScore, horizontalSet);
-
-            TreeSet<Integer> verticalSet = tagTable.findVertical(tag);
-            if (verticalSet != null)
-                checkMaxScore(tags, inputImages, maxScore, verticalSet);
-        }
-
-        if (maxScore[1] == -1) {
-            int randomIndex = tagTable.getRandomIndex();
-            if (randomIndex == -1) return new Image(-1, 0, new TreeSet<>());
-            return inputImages[randomIndex];
-        }
-        return inputImages[maxScore[1]];
-    }
-
     private Image getVerticalImage(TagTable tagTable, TreeSet<String> tags, Image[] inputImages) {
         int[] maxScore = new int[]{-1, -1};
 
@@ -96,9 +149,9 @@ public class FirstCreator implements Creator {
                 checkMaxScore(tags, inputImages, maxScore, verticalSet);
         }
 
-        if (maxScore[1] == -1){
+        if (maxScore[1] == -1) {
             int randomIndex = tagTable.getRandomIndex();
-            if (randomIndex == -1) return new Image(-1, 0, new TreeSet<>());
+            if (randomIndex == -1) return null;
             return inputImages[randomIndex];
         }
         return inputImages[maxScore[1]];
@@ -115,8 +168,8 @@ public class FirstCreator implements Creator {
     }
 
     class TagTable {
-        private final HashMap<String, TreeSet<Integer>> vertical = new HashMap<>();
-        private final HashMap<String, TreeSet<Integer>> horizontal = new HashMap<>();
+        final HashMap<String, TreeSet<Integer>> vertical = new HashMap<>();
+        final HashMap<String, TreeSet<Integer>> horizontal = new HashMap<>();
 
         TreeSet<Integer> findVertical(String tag) {
             return vertical.get(tag);
