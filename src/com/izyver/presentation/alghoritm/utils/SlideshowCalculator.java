@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.TreeSet;
 
 public class SlideshowCalculator {
 
@@ -44,14 +45,14 @@ public class SlideshowCalculator {
 
     public int calculateScoreFromImages(Image[] inputImages, SlideshowImage[] outputImages) {
         int score = 0;
-        String[] previousTags = null;
+        TreeSet<String> previousTags = null;
         for (SlideshowImage outputImage : outputImages) {
             int[] imageIndexes = outputImage.indexes;
             Image[] imagesOnTheScreen = new Image[imageIndexes.length];
             for (int j = 0; j < imageIndexes.length; j++) {
                 imagesOnTheScreen[j] = inputImages[imageIndexes[j]];
             }
-            String[] tags = parser.splitTags(imagesOnTheScreen);
+            TreeSet<String> tags = parser.splitTags(imagesOnTheScreen);
             if (previousTags != null) {
                 score += scoreFromTags(previousTags, tags);
             }
@@ -61,16 +62,22 @@ public class SlideshowCalculator {
     }
 
 
-    public int scoreFromTags(String[] previousTags, String[] currentTags) {
-        int previousUniqueTags = previousTags.length;
-        int currentUniqueTags = currentTags.length;
+    public int scoreFromTags(TreeSet<String> previousTags, TreeSet<String> currentTags) {
+        int previousUniqueTags = previousTags.size();
+        int currentUniqueTags = currentTags.size();
         int commonTags = 0;
 
-        for (String previousTag : previousTags) {
+        if (previousUniqueTags < currentUniqueTags) {
+            for (String previousTag : previousTags) {
+                if (currentTags.contains(previousTag)) {
+                    previousUniqueTags--;
+                    currentUniqueTags--;
+                    commonTags++;
+                }
+            }
+        } else {
             for (String currentTag : currentTags) {
-                if (currentTag.equalsIgnoreCase(previousTag)) {
-                    if (previousUniqueTags == 0 || currentUniqueTags == 0)
-                        return 0;
+                if (previousTags.contains(currentTag)) {
                     previousUniqueTags--;
                     currentUniqueTags--;
                     commonTags++;

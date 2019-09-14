@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class SlideshowParser {
 
@@ -41,10 +42,10 @@ public class SlideshowParser {
             int orientation = getOrientation(line.charAt(0));
             String[] words = line.split(" ");
             int numberOfTags = Integer.parseInt(words[1]);
-            String[] tags = new String[numberOfTags];
+            TreeSet<String> tags = new TreeSet<>();
 
             for (int j = 0; j < numberOfTags; j++) {
-                tags[j] = words[j + 2];
+                tags.add(words[j + 2]);
             }
 
             Image image = new Image(i, orientation, tags);
@@ -64,16 +65,11 @@ public class SlideshowParser {
         }
     }
 
-    public String[] splitTags(Image... images) {
-        Set<String> tags = new HashSet<>();
-
+    public TreeSet<String> splitTags(Image... images) {
+        TreeSet<String> tags = new TreeSet<>();
         for (Image image : images) {
-            tags.addAll(Arrays.asList(image.tags));
+            tags.addAll(image.tags);
         }
-
-        String[] strTags = new String[tags.size()];
-        tags.toArray(strTags);
-        return strTags;
-
+        return tags;
     }
 }

@@ -17,7 +17,7 @@ public class FirstCreator implements Creator {
 
     @Override
     public SlideshowImage[] create(final Image[] inputImages) {
-        TagTable tagTable = prepareImages(inputImages);
+        TagTable tagTable = new TagTable();
         for (Image inputImage : inputImages) {
             tagTable.put(inputImage);
         }
@@ -28,7 +28,10 @@ public class FirstCreator implements Creator {
         slideshowImages.add(previousImage);
 
         while (!tagTable.isEmpty()) {
+            long d = System.currentTimeMillis();
             Image image = getNextImage(tagTable, previousImage.tags, inputImages);
+            System.out.println(System.currentTimeMillis() - d);
+
             SlideshowImage slideshowImage = createSlideshowImage(inputImages, tagTable, image);
 
             previousImage = slideshowImage;
@@ -45,7 +48,7 @@ public class FirstCreator implements Creator {
             Image secondImage = getVerticalImage(tagTable, image.tags, inputImages);
 
             int[] indexes = new int[]{image.index, secondImage.index};
-            String[] splitTags = parser.splitTags(image, secondImage);
+            TreeSet<String> splitTags = parser.splitTags(image, secondImage);
             tagTable.remove(secondImage);
             tagTable.remove(image);
             return new SlideshowImage(indexes, splitTags);
@@ -53,53 +56,48 @@ public class FirstCreator implements Creator {
 
         if (image.orientation == Orientation.ORIENTATION_HORIZONTAL) {
             int[] indexes = {image.index};
-            String[] tags = image.tags;
+            TreeSet<String> tags = image.tags;
             tagTable.remove(image);
             return new SlideshowImage(indexes, tags);
         }
 
-        return new SlideshowImage(new int[0], new String[0]);
+        return new SlideshowImage(new int[0], new TreeSet<>());
     }
 
-    private TagTable prepareImages(Image[] inputImages) {
-        TagTable tagTable = new TagTable();
-
-        return tagTable;
-    }
 
     @Nullable
-    private Image getNextImage(TagTable tagTable, String[] tags, Image[] inputImages) {
+    private Image getNextImage(TagTable tagTable, TreeSet<String> tags, Image[] inputImages) {
         int[] maxScore = new int[]{-1, -1};
 
         for (String tag : tags) {
-            List<Integer> horizontalList = tagTable.findHorizontal(tag);
-            if (horizontalList != null)
-                checkMaxScore(tags, inputImages, maxScore, horizontalList);
+            TreeSet<Integer> horizontalSet = tagTable.findHorizontal(tag);
+            if (horizontalSet != null)
+                checkMaxScore(tags, inputImages, maxScore, horizontalSet);
 
-            List<Integer> verticalList = tagTable.findVertical(tag);
-            if (verticalList != null)
-                checkMaxScore(tags, inputImages, maxScore, verticalList);
+            TreeSet<Integer> verticalSet = tagTable.findVertical(tag);
+            if (verticalSet != null)
+                checkMaxScore(tags, inputImages, maxScore, verticalSet);
         }
         if (maxScore[1] == -1) {
             int randomIndex = tagTable.getRandomIndex();
-            if (randomIndex == -1) return new Image(-1, 0);
+            if (randomIndex == -1) return new Image(-1, 0, new TreeSet<>());
             return inputImages[randomIndex];
         }
         return inputImages[maxScore[1]];
     }
 
     @Nullable
-    private Image getVerticalImage(TagTable tagTable, String[] tags, Image[] inputImages) {
+    private Image getVerticalImage(TagTable tagTable, TreeSet<String> tags, Image[] inputImages) {
         int[] maxScore = new int[]{-1, -1};
         for (String tag : tags) {
-            List<Integer> verticalList = tagTable.findVertical(tag);
-            checkMaxScore(tags, inputImages, maxScore, verticalList);
+            TreeSet<Integer> verticalSet = tagTable.findVertical(tag);
+            checkMaxScore(tags, inputImages, maxScore, verticalSet);
         }
         return inputImages[maxScore[1]];
     }
 
-    private void checkMaxScore(String[] tags, Image[] inputImages, int[] maxScore, List<Integer> list) {
-        for (int foundImageIndex : list) {
+    private void checkMaxScore(TreeSet<String> tags, Image[] inputImages, int[] maxScore, TreeSet<Integer> set) {
+        for (int foundImageIndex : set) {
             int score = calculator.scoreFromTags(inputImages[foundImageIndex].tags, tags);
             if (score > maxScore[0]) {
                 maxScore[0] = score;
@@ -109,29 +107,29 @@ public class FirstCreator implements Creator {
     }
 
     class TagTable {
-        private final HashMap<String, List<Integer>> vertical = new HashMap<>();
-        private final HashMap<String, List<Integer>> horizontal = new HashMap<>();
+        private final HashMap<String, TreeSet<Integer>> vertical = new HashMap<>();
+        private final HashMap<String, TreeSet<Integer>> horizontal = new HashMap<>();
 
-        List<Integer> findVertical(String tag) {
+        TreeSet<Integer> findVertical(String tag) {
             return vertical.get(tag);
         }
 
-        List<Integer> findHorizontal(String tag) {
+        TreeSet<Integer> findHorizontal(String tag) {
             return horizontal.get(tag);
         }
 
         int getRandomIndex() {
             if (!vertical.isEmpty()) {
-                Collection<List<Integer>> values = vertical.values();
-                for (List<Integer> value : values) {
+                Collection<TreeSet<Integer>> values = vertical.values();
+                for (TreeSet<Integer> value : values) {
                     if (value.isEmpty()) continue;
-                    return value.get(0);
+                    return value.first();
                 }
             } else if (!horizontal.isEmpty()) {
-                Collection<List<Integer>> values = horizontal.values();
-                for (List<Integer> value : values) {
+                Collection<TreeSet<Integer>> values = horizontal.values();
+                for (TreeSet<Integer> value : values) {
                     if (value.isEmpty()) continue;
-                    return value.get(0);
+                    return value.first();
                 }
             }
             return -1;
@@ -167,28 +165,28 @@ public class FirstCreator implements Creator {
             return vertical.isEmpty() && horizontal.isEmpty();
         }
 
-        private void putInMap(HashMap<String, List<Integer>> map, Image inputImage) {
-            String[] tags = inputImage.tags;
+        private void putInMap(HashMap<String, TreeSet<Integer>> map, Image inputImage) {
+            TreeSet<String> tags = inputImage.tags;
             for (String tag : tags) {
 
-                List<Integer> list = map.get(tag);
+                TreeSet<Integer> set = map.get(tag);
                 int imageIndex = inputImage.index;
-                if (list == null) {
-                    LinkedList<Integer> value = new LinkedList<>();
+                if (set == null) {
+                    TreeSet<Integer> value = new TreeSet<>();
                     value.add(imageIndex);
                     map.put(tag, value);
                 } else {
-                    list.add(imageIndex);
+                    set.add(imageIndex);
                 }
             }
         }
 
-        private void removeFromMap(HashMap<String, List<Integer>> map, Image image) {
+        private void removeFromMap(HashMap<String, TreeSet<Integer>> map, Image image) {
             for (String tag : image.tags) {
-                List<Integer> list = map.get(tag);
-                if (list == null) continue;
-                list.remove(new Integer(image.index));
-                if (list.isEmpty()) {
+                TreeSet<Integer> set = map.get(tag);
+                if (set == null) continue;
+                set.remove(image.index);
+                if (set.isEmpty()) {
                     map.remove(tag);
                 }
             }

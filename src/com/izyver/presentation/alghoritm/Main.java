@@ -12,7 +12,7 @@ public class Main {
     public static void main(String[] args) {
         SlideshowGenerator generator = new SlideshowGenerator();
         generator.setCreator(new FirstCreator());
-        generator.createSlideshow("/Users/izyver/Projects/PresentationsAlghoritm/qualification_round_2019.in/e_shiny_selfies.txt");
+        generator.createSlideshow("/Users/izyver/Projects/PresentationsAlghoritm/qualification_round_2019.in/c_memorable_moments.txt");
 
     }
 }

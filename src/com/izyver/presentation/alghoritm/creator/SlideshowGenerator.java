@@ -33,6 +33,8 @@ public class SlideshowGenerator {
         SlideshowCalculator calculator = new SlideshowCalculator();
         int score = calculator.calculateScoreFromImages(inputImages, slideshowImages);
 
+        System.out.println("your score is " + score);
+
         return "";
 
     }
