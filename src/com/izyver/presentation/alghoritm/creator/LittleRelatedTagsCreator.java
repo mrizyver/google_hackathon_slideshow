@@ -6,11 +6,10 @@ import com.izyver.presentation.alghoritm.model.Orientation;
 import com.izyver.presentation.alghoritm.model.SlideshowImage;
 import com.izyver.presentation.alghoritm.utils.SlideshowCalculator;
 import com.izyver.presentation.alghoritm.utils.SlideshowParser;
-import com.sun.istack.internal.Nullable;
 
 import java.util.*;
 
-public class FirstCreator implements Creator {
+public class LittleRelatedTagsCreator implements Creator {
 
     private SlideshowCalculator calculator = new SlideshowCalculator();
     private SlideshowParser parser = new SlideshowParser();
@@ -31,12 +30,15 @@ public class FirstCreator implements Creator {
         while (!tagTable.isEmpty()) {
             long d = System.currentTimeMillis();
             Image image = getNextImage(tagTable, previousImage.tags, inputImages);
-            System.out.println(System.currentTimeMillis() - d + " - " + i++);
 
             SlideshowImage slideshowImage = createSlideshowImage(inputImages, tagTable, image);
 
             previousImage = slideshowImage;
             slideshowImages.add(slideshowImage);
+
+            if (i % 100 == 0)
+                System.out.println(System.currentTimeMillis() - d + " - " + i);
+            i++;
         }
 
         SlideshowImage[] result = new SlideshowImage[slideshowImages.size()];
@@ -93,7 +95,7 @@ public class FirstCreator implements Creator {
         for (String tag : tags) {
             TreeSet<Integer> verticalSet = tagTable.findVertical(tag);
             if (verticalSet != null)
-                checkMaxScore(tags, inputImages, maxScore, verticalSet);
+                checkMinScore(tags, inputImages, maxScore, verticalSet);
         }
 
         if (maxScore[1] == -1){
@@ -113,6 +115,17 @@ public class FirstCreator implements Creator {
             }
         }
     }
+
+     private void checkMinScore(TreeSet<String> tags, Image[] inputImages, int[] maxScore, TreeSet<Integer> set) {
+        for (int foundImageIndex : set) {
+            int score = calculator.scoreFromTags(inputImages[foundImageIndex].tags, tags);
+            if (score < maxScore[0]) {
+                maxScore[0] = score;
+                maxScore[1] = foundImageIndex;
+            }
+        }
+    }
+
 
     class TagTable {
         private final HashMap<String, TreeSet<Integer>> vertical = new HashMap<>();

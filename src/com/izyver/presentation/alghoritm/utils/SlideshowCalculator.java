@@ -51,9 +51,6 @@ public class SlideshowCalculator {
             Image[] imagesOnTheScreen = new Image[imageIndexes.length];
             for (int j = 0; j < imageIndexes.length; j++) {
                 int imageIndex = imageIndexes[j];
-                if (imageIndex == -1){
-                    imageIndex = -1;
-                }
                 imagesOnTheScreen[j] = inputImages[imageIndex];
             }
             TreeSet<String> tags = parser.splitTags(imagesOnTheScreen);
