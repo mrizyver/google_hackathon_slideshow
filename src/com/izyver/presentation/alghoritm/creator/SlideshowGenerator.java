@@ -36,7 +36,6 @@ public class SlideshowGenerator {
         System.out.println("your score is " + score);
 
         return "";
-
     }
 
     public void setCreator(Creator creator) {
