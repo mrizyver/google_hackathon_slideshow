@@ -15,28 +15,37 @@ public class PrimAlghoritmCreator implements Creator {
 
     @Override
     public SlideshowImage[] create(Image[] inputImages) {
-
-        TreeSet[] treeSet = createGraph(inputImages);
-
-        List<SlideshowImage> slideshowImages = new ArrayList<>(treeSet.length);
-        TreeSet set = treeSet[0];
-
-        while (true){
-            NeighbouringVertex neighbour = (NeighbouringVertex) set.pollFirst();
-            if (neighbour == null){
-                System.out.println();
+        TreeSet<Integer> used = new TreeSet<>();
+        PriorityQueue[] graph = createGraph(inputImages);
+        List<SlideshowImage> slideshowImages = new ArrayList<>(graph.length);
+        PriorityQueue<NeighbouringVertex> queue = graph[0];
+        graph_label:
+        while (true) {
+            NeighbouringVertex neighbour = queue.poll();
+            if (neighbour == null) {
+                for (PriorityQueue priorityQueue : graph) {
+                    if (priorityQueue != null && !priorityQueue.isEmpty()) {
+                        queue =  priorityQueue;
+                        continue graph_label;
+                    }
+                }
                 break;
             }
+
+            if (used.contains(neighbour.vertex)) continue;
+            used.add(neighbour.vertex);
+
             slideshowImages.add(new SlideshowImage(new int[]{neighbour.vertex}, null));
-            set = treeSet[neighbour.vertex];
+            queue = graph[neighbour.vertex];
         }
 
-
-        return new SlideshowImage[0];
+        SlideshowImage[] result = new SlideshowImage[slideshowImages.size()];
+        slideshowImages.toArray(result);
+        return result;
     }
 
-    private TreeSet[] createGraph(Image[] images) {
-        TreeSet[] graph = new TreeSet[images.length];
+    private PriorityQueue[] createGraph(Image[] images) {
+        PriorityQueue[] graph = new PriorityQueue[images.length];
         SlideshowCalculator calculator = new SlideshowCalculator();
         HashMap<String, TreeSet<Integer>> mapByTags = createMapByTags(images);
 
@@ -44,19 +53,14 @@ public class PrimAlghoritmCreator implements Creator {
         for (Map.Entry<String, TreeSet<Integer>> entry : entries) {
             mapMetric.start();
             TreeSet<Integer> indexes = entry.getValue();
-            HashMap<Integer, Integer> buffer = new HashMap<>(indexes.size());
             for (int index : indexes) {
                 metric.start();
                 if (graph[index] == null) {
-                    graph[index] = new TreeSet<>(this::compare);
+                    graph[index] = new PriorityQueue<>(this::compare);
                 }
                 for (int neighIndex : indexes) {
                     if (index == neighIndex) continue;
-                    Integer weight = buffer.get(neighIndex);
-                    if (weight == null){
-                        weight = calculator.scoreFromTags(images[index].tags, images[neighIndex].tags);
-                        buffer.put(index, weight);
-                    }
+                    int weight = calculator.scoreFromTags(images[index].tags, images[neighIndex].tags);
                     graph[index].add(new NeighbouringVertex(neighIndex, weight));
                 }
                 metric.end();
